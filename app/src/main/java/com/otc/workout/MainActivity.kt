@@ -21,6 +21,7 @@ class MainActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("otc_data", Context.MODE_PRIVATE) }
     private val handler = Handler(Looper.getMainLooper())
     private var timerSeconds = 0
+    private var timerRunnable: Runnable? = null
     private lateinit var content: LinearLayout
     private var selectedDay = 1
 
