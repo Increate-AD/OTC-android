@@ -6,6 +6,8 @@ import android.os.Handler
 import android.os.Looper
 import android.graphics.Color
 import android.graphics.Typeface
+import android.content.res.ColorStateList
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
@@ -24,6 +26,7 @@ class MainActivity : Activity() {
     private var timerRunnable: Runnable? = null
     private lateinit var content: LinearLayout
     private var selectedDay = 1
+    private var currentScreen = "home"
 
     private val workouts = mapOf(
         1 to listOf(
@@ -96,9 +99,21 @@ class MainActivity : Activity() {
         showHome()
     }
 
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (currentScreen != "home") {
+            showHome()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     private fun weightParams() = LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(2, 4, 2, 4) }
     private fun navButton(label: String, action: () -> Unit) = Button(this).apply {
-        text = label; textSize = 10f; setOnClickListener { action() }
+        text = label; textSize = 10f
+        setTextColor(Color.WHITE)
+        backgroundTintList = ColorStateList.valueOf(Color.rgb(48, 50, 60))
+        setOnClickListener { action() }
     }
     private fun heading(value: String) {
         content.addView(TextView(this).apply {
@@ -114,15 +129,25 @@ class MainActivity : Activity() {
     }
     private fun card(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL; setPadding(14, 12, 14, 12)
-        setBackgroundColor(Color.rgb(28, 30, 38))
+        background = GradientDrawable().apply {
+            setColor(Color.rgb(29, 31, 40))
+            cornerRadius = 18f
+            setStroke(1, Color.rgb(55, 48, 57))
+        }
         content.addView(this, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 7, 0, 7) })
     }
     private fun actionButton(label: String, action: () -> Unit) {
-        content.addView(Button(this).apply { text = label; setOnClickListener { action() } },
+        content.addView(Button(this).apply {
+            text = label
+            setTextColor(Color.WHITE)
+            backgroundTintList = ColorStateList.valueOf(Color.rgb(151, 35, 49))
+            setOnClickListener { action() }
+        },
             LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 6, 0, 6) })
     }
 
     private fun showHome() {
+        currentScreen = "home"
         content.removeAllViews()
         heading("LEVEL 2")
         body("Football-first calisthenics training")
@@ -145,6 +170,7 @@ class MainActivity : Activity() {
     }
 
     private fun showWorkout(day: Int) {
+        currentScreen = "workout"
         selectedDay = day
         content.removeAllViews()
         heading("DAY $day")
@@ -233,6 +259,7 @@ class MainActivity : Activity() {
     }
 
     private fun showHistory() {
+        currentScreen = "history"
         content.removeAllViews()
         heading("TRAINING HISTORY")
         body("Completed workouts: ${prefs.getInt("workouts_done", 0)}")
@@ -245,6 +272,7 @@ class MainActivity : Activity() {
     }
 
     private fun showTest() {
+        currentScreen = "test"
         content.removeAllViews()
         heading("LEVEL 2 TEST")
         body("Enter your best valid result for each standard. You must meet every target to pass.")
