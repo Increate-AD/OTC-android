@@ -75,12 +75,17 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.rgb(12, 13, 17))
-            setPadding(18, 18, 18, 12)
+            setPadding(20, 18, 20, 14)
         }
         root.addView(TextView(this).apply {
-            text = "OTC  /  OUTWORK THE CHALLENGE"
-            setTextColor(Color.WHITE); textSize = 21f; typeface = Typeface.DEFAULT_BOLD
-            setPadding(4, 8, 4, 16)
+            text = "OTC"
+            setTextColor(Color.WHITE); textSize = 28f; typeface = Typeface.DEFAULT_BOLD
+            setPadding(4, 10, 4, 2)
+        })
+        root.addView(TextView(this).apply {
+            text = "OUTWORK THE CHALLENGE"
+            setTextColor(Color.rgb(190, 55, 70)); textSize = 10f
+            letterSpacing = 0.18f; setPadding(5, 0, 4, 12)
         })
         val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         nav.addView(navButton("Home") { showHome() }, weightParams())
@@ -111,14 +116,15 @@ class MainActivity : Activity() {
     private fun weightParams() = LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(2, 4, 2, 4) }
     private fun navButton(label: String, action: () -> Unit) = Button(this).apply {
         text = label; textSize = 10f
+        isAllCaps = false
         setTextColor(Color.WHITE)
-        backgroundTintList = ColorStateList.valueOf(Color.rgb(48, 50, 60))
+        backgroundTintList = ColorStateList.valueOf(Color.rgb(39, 41, 51))
         setOnClickListener { action() }
     }
     private fun heading(value: String) {
         content.addView(TextView(this).apply {
-            text = value; textSize = 23f; typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE); setPadding(0, 12, 0, 10)
+            text = value; textSize = 24f; typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE); setPadding(0, 16, 0, 10)
         })
     }
     private fun body(value: String, size: Float = 15f) {
@@ -139,8 +145,10 @@ class MainActivity : Activity() {
     private fun actionButton(label: String, action: () -> Unit) {
         content.addView(Button(this).apply {
             text = label
+            isAllCaps = false
+            textSize = 14f
             setTextColor(Color.WHITE)
-            backgroundTintList = ColorStateList.valueOf(Color.rgb(151, 35, 49))
+            backgroundTintList = ColorStateList.valueOf(Color.rgb(133, 28, 45))
             setOnClickListener { action() }
         },
             LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 6, 0, 6) })
@@ -149,13 +157,27 @@ class MainActivity : Activity() {
     private fun showHome() {
         currentScreen = "home"
         content.removeAllViews()
-        heading("LEVEL 2")
-        body("Football-first calisthenics training")
-        card().apply {
-            body("WORKOUTS COMPLETED: ${prefs.getInt("workouts_done", 0)}")
-            body("CURRENT STREAK: ${prefs.getInt("streak", 0)} days")
-            body("NEXT IN ORDER: Day $selectedDay")
-        }
+        heading("LEVEL 02")
+        body("FOOTBALL-FIRST CALISTHENICS", 11f)
+        val stats = card()
+        stats.addView(TextView(this).apply {
+            text = "YOUR TRAINING STATUS"
+            setTextColor(Color.rgb(204, 70, 83)); textSize = 11f
+            letterSpacing = 0.12f; typeface = Typeface.DEFAULT_BOLD
+        })
+        stats.addView(TextView(this).apply {
+            text = "${prefs.getInt("workouts_done", 0)}"
+            setTextColor(Color.WHITE); textSize = 34f; typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 8, 0, 0)
+        })
+        stats.addView(TextView(this).apply {
+            text = "WORKOUTS COMPLETED"
+            setTextColor(Color.rgb(180, 185, 198)); textSize = 11f
+        })
+        stats.addView(TextView(this).apply {
+            text = "STREAK  ·  ${prefs.getInt("streak", 0)} days       NEXT  ·  Day $selectedDay"
+            setTextColor(Color.WHITE); textSize = 13f; setPadding(0, 14, 0, 2)
+        })
         heading("YOUR WEEK")
         for (day in 1..7) {
             val label = when (day) {
@@ -210,6 +232,8 @@ class MainActivity : Activity() {
         val input = EditText(this).apply {
             hint = "Actual reps / seconds / result"; setSingleLine(true)
             setTextColor(Color.WHITE); setHintTextColor(Color.GRAY)
+            backgroundTintList = ColorStateList.valueOf(Color.rgb(190, 55, 70))
+            setPadding(10, 4, 10, 4)
         }
         c.addView(input)
         val logged = TextView(this).apply {
@@ -219,6 +243,9 @@ class MainActivity : Activity() {
         c.addView(logged)
         c.addView(Button(this).apply {
             text = "Log completed set"
+            isAllCaps = false
+            setTextColor(Color.WHITE)
+            backgroundTintList = ColorStateList.valueOf(Color.rgb(133, 28, 45))
             setOnClickListener {
                 val value = input.text.toString().trim()
                 if (value.isEmpty()) {
