@@ -125,14 +125,15 @@ class MainActivity : Activity() {
     private fun navParams() = LinearLayout.LayoutParams(0, 54, 1f).apply {
         setMargins(3, 5, 3, 5)
     }
-    private fun navButton(label: String, action: () -> Unit) = Button(this).apply {
-        text = label; textSize = 11f; isAllCaps = false
+    private fun navButton(label: String, action: () -> Unit) = TextView(this).apply {
+        text = label; textSize = 11f
         typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
-        setTextColor(Color.WHITE); minHeight = 54; minimumHeight = 54
-        setPadding(3, 8, 3, 8)
+        setTextColor(Color.WHITE)
+        isClickable = true; isFocusable = true
+        setPadding(2, 0, 2, 0)
         background = GradientDrawable().apply {
             setColor(Color.rgb(39, 41, 51))
-            cornerRadius = 14f
+            cornerRadius = 12f
             setStroke(1, Color.rgb(105, 47, 60))
         }
         setOnClickListener { action() }
