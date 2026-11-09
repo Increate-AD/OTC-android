@@ -303,21 +303,39 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER; text = timerText()
         }
         panel.addView(timerLabel)
-        val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
-        val minus = smallTimerButton("-15s") { adjustTimer(-15) }
-        pauseButton = smallTimerButton(if (timerPaused) "Resume" else "Pause") { toggleTimerPause() }
-        val plus = smallTimerButton("+15s") { adjustTimer(15) }
-        val skip = smallTimerButton("Skip") { skipTimer() }
-        controls.addView(minus, weightParams()); controls.addView(pauseButton, weightParams())
-        controls.addView(plus, weightParams()); controls.addView(skip, weightParams())
-        panel.addView(controls)
+        panel.addView(TextView(this).apply {
+            text = "REST CONTROLS"; textSize = 11f; typeface = Typeface.DEFAULT_BOLD
+            letterSpacing = 0.12f; setTextColor(Color.rgb(235, 185, 192))
+            gravity = Gravity.CENTER; setPadding(0, 8, 0, 8)
+        })
+        val topRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        val bottomRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        val minus = timerButton("-15 sec") { adjustTimer(-15) }
+        pauseButton = timerButton(if (timerPaused) "RESUME" else "PAUSE") { toggleTimerPause() }
+        val plus = timerButton("+15 sec") { adjustTimer(15) }
+        val skip = timerButton("SKIP REST") { skipTimer() }
+        topRow.addView(minus, timerButtonParams())
+        topRow.addView(plus, timerButtonParams())
+        bottomRow.addView(pauseButton, timerButtonParams())
+        bottomRow.addView(skip, timerButtonParams())
+        panel.addView(topRow)
+        panel.addView(bottomRow)
         timerPanel = panel
         content.addView(panel, 0, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, 10) })
     }
 
-    private fun smallTimerButton(label: String, action: () -> Unit) = Button(this).apply {
-        text = label; textSize = 10f; isAllCaps = false; setTextColor(Color.WHITE)
-        backgroundTintList = ColorStateList.valueOf(Color.rgb(95, 37, 49))
+    private fun timerButtonParams() = LinearLayout.LayoutParams(0, 56, 1f).apply {
+        setMargins(5, 5, 5, 5)
+    }
+
+    private fun timerButton(label: String, action: () -> Unit) = Button(this).apply {
+        text = label; textSize = 14f; isAllCaps = false; typeface = Typeface.DEFAULT_BOLD
+        setTextColor(Color.WHITE); minHeight = 56; minimumHeight = 56
+        setPadding(8, 8, 8, 8)
+        backgroundTintList = ColorStateList.valueOf(
+            if (label == "PAUSE" || label == "RESUME") Color.rgb(155, 35, 54)
+            else Color.rgb(91, 42, 54)
+        )
         setOnClickListener { action() }
     }
 
@@ -328,7 +346,7 @@ class MainActivity : Activity() {
 
     private fun updateTimerDisplay() {
         timerLabel?.text = timerText()
-        pauseButton?.text = if (timerPaused) "Resume" else "Pause"
+        pauseButton?.text = if (timerPaused) "RESUME" else "PAUSE"
     }
 
     private fun startRest(seconds: Int) {
