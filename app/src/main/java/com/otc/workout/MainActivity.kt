@@ -166,6 +166,29 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 6, 0, 6) })
     }
 
+    private fun controlButton(
+        label: String,
+        height: Int = 52,
+        backgroundColor: Int = Color.rgb(91, 42, 54),
+        action: () -> Unit
+    ) = TextView(this).apply {
+        text = label
+        textSize = 14f
+        typeface = Typeface.DEFAULT_BOLD
+        gravity = Gravity.CENTER
+        setTextColor(Color.WHITE)
+        minHeight = height
+        isClickable = true
+        isFocusable = true
+        setPadding(10, 8, 10, 8)
+        background = GradientDrawable().apply {
+            setColor(backgroundColor)
+            cornerRadius = 12f
+            setStroke(1, Color.rgb(130, 58, 72))
+        }
+        setOnClickListener { action() }
+    }
+
     private fun loadRecords(): MutableList<SetRecord> {
         val result = mutableListOf<SetRecord>()
         val array = JSONArray(prefs.getString("set_history_json", "[]"))
@@ -279,21 +302,17 @@ class MainActivity : Activity() {
             setTextColor(Color.rgb(210, 210, 220))
         }
         c.addView(logged)
-        c.addView(Button(this).apply {
-            text = "Log completed set"; isAllCaps = false; setTextColor(Color.WHITE)
-            backgroundTintList = ColorStateList.valueOf(Color.rgb(133, 28, 45))
-            setOnClickListener {
-                val value = input.text.toString().trim()
-                if (value.isEmpty()) {
-                    Toast.makeText(this@MainActivity, "Enter what you actually completed.", Toast.LENGTH_SHORT).show()
-                } else {
-                    val count = addRecord(day, ex.name, value)
-                    logged.text = "Sets logged: ${legacyCount + count} · Last: $value"
-                    input.text.clear()
-                    if (ex.restSeconds > 0) startRest(ex.restSeconds)
-                }
+        c.addView(controlButton("LOG COMPLETED SET", 54, Color.rgb(133, 28, 45)) {
+            val value = input.text.toString().trim()
+            if (value.isEmpty()) {
+                Toast.makeText(this@MainActivity, "Enter what you actually completed.", Toast.LENGTH_SHORT).show()
+            } else {
+                val count = addRecord(day, ex.name, value)
+                logged.text = "Sets logged: ${legacyCount + count} · Last: $value"
+                input.text.clear()
+                if (ex.restSeconds > 0) startRest(ex.restSeconds)
             }
-        })
+        }, LinearLayout.LayoutParams(-1, 54).apply { setMargins(0, 6, 0, 6) })
     }
 
     private fun attachTimerPanelIfNeeded() {
@@ -321,10 +340,10 @@ class MainActivity : Activity() {
         })
         val topRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
         val bottomRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
-        val minus = timerButton("-15 sec") { adjustTimer(-15) }
-        pauseButton = timerButton(if (timerPaused) "RESUME" else "PAUSE") { toggleTimerPause() }
-        val plus = timerButton("+15 sec") { adjustTimer(15) }
-        val skip = timerButton("SKIP REST") { skipTimer() }
+        val minus = controlButton("-15 SEC", 56) { adjustTimer(-15) }
+        pauseButton = controlButton(if (timerPaused) "RESUME" else "PAUSE", 56, Color.rgb(155, 35, 54)) { toggleTimerPause() }
+        val plus = controlButton("+15 SEC", 56) { adjustTimer(15) }
+        val skip = controlButton("SKIP REST", 56) { skipTimer() }
         topRow.addView(minus, timerButtonParams())
         topRow.addView(plus, timerButtonParams())
         bottomRow.addView(pauseButton, timerButtonParams())
@@ -339,16 +358,6 @@ class MainActivity : Activity() {
         setMargins(5, 5, 5, 5)
     }
 
-    private fun timerButton(label: String, action: () -> Unit) = Button(this).apply {
-        text = label; textSize = 14f; isAllCaps = false; typeface = Typeface.DEFAULT_BOLD
-        setTextColor(Color.WHITE); minHeight = 56; minimumHeight = 56
-        setPadding(8, 8, 8, 8)
-        backgroundTintList = ColorStateList.valueOf(
-            if (label == "PAUSE" || label == "RESUME") Color.rgb(155, 35, 54)
-            else Color.rgb(91, 42, 54)
-        )
-        setOnClickListener { action() }
-    }
 
     private fun timerText(): String = when {
         timerSeconds <= 0 -> "REST COMPLETE"
@@ -427,12 +436,8 @@ class MainActivity : Activity() {
                     textSize = 13f; setTextColor(Color.rgb(190, 195, 207)); setPadding(0, 5, 0, 8)
                 })
                 val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                actions.addView(Button(this).apply {
-                    text = "Edit"; isAllCaps = false; setOnClickListener { editRecord(record) }
-                }, weightParams())
-                actions.addView(Button(this).apply {
-                    text = "Delete"; isAllCaps = false; setOnClickListener { confirmDeleteRecord(record) }
-                }, weightParams())
+                actions.addView(controlButton("EDIT", 52, Color.rgb(65, 75, 95)) { editRecord(record) }, navParams())
+                actions.addView(controlButton("DELETE", 52, Color.rgb(133, 28, 45)) { confirmDeleteRecord(record) }, navParams())
                 item.addView(actions)
             }
         }
