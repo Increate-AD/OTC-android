@@ -100,10 +100,10 @@ class MainActivity : Activity() {
             textSize = 10f; letterSpacing = 0.18f; setPadding(5, 0, 4, 12)
         })
         val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        nav.addView(navButton("Home") { showHome() }, weightParams())
-        nav.addView(navButton("Workout") { showWorkout(selectedDay) }, weightParams())
-        nav.addView(navButton("History") { showHistory() }, weightParams())
-        nav.addView(navButton("Level test") { showTest() }, weightParams())
+        nav.addView(navButton("HOME") { showHome() }, navParams())
+        nav.addView(navButton("WORKOUT") { showWorkout(selectedDay) }, navParams())
+        nav.addView(navButton("HISTORY") { showHistory() }, navParams())
+        nav.addView(navButton("LEVEL TEST") { showTest() }, navParams())
         root.addView(nav)
         val scroll = ScrollView(this)
         content = LinearLayout(this).apply {
@@ -122,9 +122,19 @@ class MainActivity : Activity() {
     }
 
     private fun weightParams() = LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(2, 4, 2, 4) }
+    private fun navParams() = LinearLayout.LayoutParams(0, 54, 1f).apply {
+        setMargins(3, 5, 3, 5)
+    }
     private fun navButton(label: String, action: () -> Unit) = Button(this).apply {
-        text = label; textSize = 10f; isAllCaps = false; setTextColor(Color.WHITE)
-        backgroundTintList = ColorStateList.valueOf(Color.rgb(39, 41, 51))
+        text = label; textSize = 11f; isAllCaps = false
+        typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+        setTextColor(Color.WHITE); minHeight = 54; minimumHeight = 54
+        setPadding(3, 8, 3, 8)
+        background = GradientDrawable().apply {
+            setColor(Color.rgb(39, 41, 51))
+            cornerRadius = 14f
+            setStroke(1, Color.rgb(105, 47, 60))
+        }
         setOnClickListener { action() }
     }
     private fun heading(value: String) {
