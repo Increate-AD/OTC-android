@@ -240,11 +240,11 @@ class MainActivity : Activity() {
         6 to listOf(
             TestStandard("Advanced skills performed consistently (count)", 3),
             TestStandard("Strict pull-ups or weighted equivalent (reps)", 15),
-            TestStandard("Strict handstand push-ups (reps)", 1),
-            TestStandard("Advanced planche progression hold (seconds)", 1),
+            TestStandard("Strict handstand push-ups achieved (enter 1 if yes)", 1),
+            TestStandard("Advanced planche progression achieved (enter 1 if yes)", 1),
             TestStandard("L-sit / V-sit hold (seconds)", 30),
-            TestStandard("Advanced lever progression hold (seconds)", 1),
-            TestStandard("Clean dragon squats / advanced unilateral reps per side", 1),
+            TestStandard("Advanced lever progression achieved (enter 1 if yes)", 1),
+            TestStandard("Clean dragon squat / advanced unilateral skill achieved (enter 1 if yes)", 1),
             TestStandard("Football speed and agility maintained (enter 1 for yes)", 1)
         )
     )
@@ -491,7 +491,7 @@ class MainActivity : Activity() {
 
     private fun showHome() {
         currentScreen = "home"; content.removeAllViews()
-        heading("LEVEL 02")
+        heading("LEVEL ${currentLevel.toString().padStart(2, '0')}")
         body("FOOTBALL-FIRST CALISTHENICS", 11f)
         val stats = card()
         stats.addView(TextView(this).apply {
