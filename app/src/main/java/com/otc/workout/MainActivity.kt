@@ -569,8 +569,13 @@ class MainActivity : Activity() {
             settings.javaScriptEnabled = false
             settings.allowFileAccess = true
             layoutParams = LinearLayout.LayoutParams(-1, 190)
-            val slug = ex.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
-            loadDataWithBaseURL("file:///android_asset/", "<html><body style='margin:0;background:#121318;color:#d6a0aa;font:14px sans-serif;text-align:center'><img src='demos/" + slug + ".svg' style='max-width:100%;max-height:185px' onerror='this.style.display=\\"none\\";document.getElementById(\\"fallback\\").style.display=\\"block\\"'><div id='fallback' style='display:none;padding:24px'>ANIMATED OFFLINE DEMO COMING IN THE NEXT ASSET PACK</div></body></html>", "text/html", "UTF-8", null)
+            val slug = when {
+                ex.name.contains("front lever", true) -> "front-lever"
+                ex.name.contains("shuttle", true) -> "shuttle"
+                else -> ex.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
+            }
+            val demoHtml = "<html><body style='margin:0;background:#121318;color:#d6a0aa;font:14px sans-serif;text-align:center'><img src='demos/" + slug + ".svg' style='max-width:100%;max-height:185px'><div style='padding:6px'>OFFLINE EXERCISE DEMO</div></body></html>"
+            loadDataWithBaseURL("file:///android_asset/", demoHtml, "text/html", "UTF-8", null)
         }
         panel.addView(gif)
         panel.addView(TextView(this).apply {
