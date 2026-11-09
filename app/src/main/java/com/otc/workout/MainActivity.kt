@@ -37,7 +37,7 @@ class MainActivity : Activity() {
     private var timerRunnable: Runnable? = null
     private var timerPanel: LinearLayout? = null
     private var timerLabel: TextView? = null
-    private var pauseButton: Button? = null
+    private var pauseButton: TextView? = null
     private lateinit var content: LinearLayout
     private var selectedDay = 1
     private var currentScreen = "home"
