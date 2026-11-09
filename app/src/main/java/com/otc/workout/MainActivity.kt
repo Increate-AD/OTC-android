@@ -29,6 +29,7 @@ import java.util.Locale
 
 data class Exercise(val name: String, val target: String, val restSeconds: Int, val cue: String)
 data class SetRecord(val id: Long, val day: Int, val exercise: String, val value: String, val timestamp: Long)
+data class TestStandard(val label: String, val target: Int, val alternativeGroup: String? = null)
 
 class MainActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("otc_data", Context.MODE_PRIVATE) }
@@ -42,6 +43,7 @@ class MainActivity : Activity() {
     private var pauseButton: TextView? = null
     private lateinit var content: LinearLayout
     private var selectedDay = 1
+    private var currentLevel = 2
     private var currentScreen = "home"
 
     private val workouts = mapOf(
@@ -75,6 +77,124 @@ class MainActivity : Activity() {
         )
     )
 
+    private val advancedWorkouts: Map<Int, Map<Int, List<Exercise>>> = mapOf(
+        3 to mapOf(
+            1 to listOf(
+                Exercise("Acceleration", "5 × 10 m + 4 × 20 m", 180, "Use full recovery; every sprint should be fast and technically clean."),
+                Exercise("Broad jump", "5 × 3", 90, "Jump explosively and land quietly with knees aligned."),
+                Exercise("Pistol squat", "4 × 8 / leg", 120, "Use assistance if needed; stop before technique breaks."),
+                Exercise("Hard split squat", "4 × 6 / leg", 120, "Choose a challenging controlled variation."),
+                Exercise("Nordic hamstring curl", "3 × 5", 150, "Use assistance to control the eccentric.")
+            ),
+            2 to listOf(
+                Exercise("Chest-to-bar pull-up", "5 × 4–6", 150, "Pull the chest toward the bar without kicking."),
+                Exercise("Explosive pull-up", "5 × 3", 150, "Prioritize height and clean reps."),
+                Exercise("Straight-bar dip", "4 × 6–10", 120, "Use a stable top support and controlled depth."),
+                Exercise("Advanced tuck front lever", "5 × 12–15 sec", 120, "Keep hips level and shoulders engaged."),
+                Exercise("L-sit", "5 × 20 sec", 90, "Keep knees locked as your current level allows.")
+            ),
+            4 to listOf(
+                Exercise("Reactive change of direction", "5 quality reps", 120, "React to a visual or audio cue; each rep stays sharp."),
+                Exercise("Lateral bound", "4 × 4 / side", 90, "Stick each landing before the next rep."),
+                Exercise("Assisted dragon squat", "4 × 4 / side", 120, "Use support and a pain-free range."),
+                Exercise("Copenhagen plank", "3 × 30 sec / side", 90, "Keep hips lifted and trunk straight."),
+                Exercise("Calf raise", "4 × 12", 60, "Use a full controlled range.")
+            ),
+            5 to listOf(
+                Exercise("Pseudo-planche push-up", "5 × 6–10", 120, "Lean forward only as far as you can keep control."),
+                Exercise("Pike / deficit pike push-up", "4 × 6–10", 120, "Keep elbows controlled and head path consistent."),
+                Exercise("Handstand practice", "10 min", 60, "Use safe wall or freestanding progressions."),
+                Exercise("Wall HSPU eccentric", "4 × 3–5", 150, "Lower slowly; stop if shoulder position collapses."),
+                Exercise("L-sit / V-sit progression", "5 × 15 sec", 90, "Use the hardest clean hold you can maintain.")
+            )
+        ),
+        4 to mapOf(
+            1 to listOf(
+                Exercise("Acceleration", "5 × 10 m + 3 × 20 m", 180, "Full recovery; maintain sprint quality."),
+                Exercise("Single-leg jump", "4 × 3 / side", 120, "Land quietly and stabilize each repetition."),
+                Exercise("Pistol squat variation", "4 × 6 / leg", 120, "Choose a variation that permits clean reps."),
+                Exercise("Nordic hamstring curl", "3 × 5", 150, "Control the lowering phase."),
+                Exercise("Calf raise", "4 × 12", 60, "Pause at the top.")
+            ),
+            2 to listOf(
+                Exercise("Muscle-up transition", "5 × 3", 150, "Practice a controlled transition with an appropriate assist."),
+                Exercise("Explosive chest-to-bar", "5 × 3", 150, "Pull high without swinging."),
+                Exercise("Front lever progression", "5 × 10–15 sec", 150, "Use the hardest technically sound progression."),
+                Exercise("Advanced pull-up", "4 × 5–6", 120, "Add difficulty only while reps stay strict."),
+                Exercise("L-sit", "4 × 25 sec", 90, "Keep shoulders depressed and legs active.")
+            ),
+            4 to listOf(
+                Exercise("Reactive agility", "6 reps", 120, "Respond to an unpredictable cue and stay balanced."),
+                Exercise("Dragon squat progression", "4 × 3 / side", 150, "Use assistance as required for clean depth."),
+                Exercise("Split squat", "4 × 6 / leg", 120, "Use a challenging controlled load or variation."),
+                Exercise("Copenhagen plank", "3 × 30 sec / side", 90, "Maintain a straight trunk."),
+                Exercise("Deceleration", "4 × 10 m", 120, "Accelerate then brake progressively with control.")
+            ),
+            5 to listOf(
+                Exercise("Handstand practice", "12–15 min", 60, "Accumulate quality attempts with safe exits."),
+                Exercise("HSPU progression", "5 × 3–6", 150, "Use a range and variation you can control."),
+                Exercise("Planche lean / pseudo-planche hold", "5 × 15–25 sec", 120, "Protract the shoulders and keep elbows locked."),
+                Exercise("Dips", "4 × 8–12", 120, "Use a challenging but pain-free variation."),
+                Exercise("L-sit / V-sit", "5 × 15–25 sec", 90, "Keep each hold clean.")
+            )
+        ),
+        5 to mapOf(
+            1 to listOf(
+                Exercise("Acceleration", "6 × 10 m + 3 × 20 m", 180, "Full recovery; stop if sprint quality drops."),
+                Exercise("Bounds", "4 × 4 / side", 120, "Explode and land with control."),
+                Exercise("Advanced unilateral strength", "4 × 5–6 / leg", 150, "Use a challenging clean single-leg variation."),
+                Exercise("Nordic hamstring curl", "3 × 4–6", 150, "Keep eccentric control.")
+            ),
+            2 to listOf(
+                Exercise("Muscle-up", "5 × 1–3 or hardest clean progression", 180, "No kipping unless the chosen progression specifically requires assistance."),
+                Exercise("Advanced pull-up", "4 × 4–6", 150, "Use strict form and a challenging variation."),
+                Exercise("Front lever", "5 × 8–12 sec", 150, "Use your hardest repeatable progression."),
+                Exercise("L-sit / V-sit", "5 × 20 sec", 90, "Keep the hold strict."),
+                Exercise("Hanging leg raise", "3 × 10–15", 90, "Avoid swinging.")
+            ),
+            4 to listOf(
+                Exercise("Reactive change of direction", "6–8 reps", 150, "Keep every repetition reactive and high quality."),
+                Exercise("Dragon squat", "4 × 3 / side", 150, "Use minimal assistance while preserving control."),
+                Exercise("Single-leg jump", "4 × 3 / side", 120, "Land quietly and stabilize."),
+                Exercise("Copenhagen plank", "3 × 30–40 sec / side", 90, "Maintain hip height."),
+                Exercise("Calf / tibialis raise", "3 × 12–15", 60, "Use controlled full range.")
+            ),
+            5 to listOf(
+                Exercise("Handstand practice", "15 min", 60, "Prioritize quality balance and safe exits."),
+                Exercise("Handstand push-up", "5 × 3–6", 180, "Use a strict progression you can control."),
+                Exercise("Planche progression", "5 × 10–20 sec", 150, "Keep scapula protracted and elbows locked."),
+                Exercise("Hard-variation dips", "3 × 8–12", 120, "Choose a difficult but controlled variation."),
+                Exercise("Upper accessory", "3 × 10–15", 75, "Use a balanced, pain-free accessory.")
+            )
+        ),
+        6 to mapOf(
+            1 to listOf(
+                Exercise("Short acceleration", "4–6 × 10–20 m", 180, "Full recovery; keep every sprint crisp."),
+                Exercise("Advanced unilateral power", "3–5 sets", 150, "Choose a safe advanced jump or power variation."),
+                Exercise("Individualized strength maintenance", "3–4 sets", 120, "Maintain the strength pattern that supports football."),
+                Exercise("Posterior-chain maintenance", "2–3 sets", 120, "Use a controlled hamstring/hip-dominant exercise.")
+            ),
+            2 to listOf(
+                Exercise("Muscle-up variations", "4–6 quality sets", 180, "Choose a technically consistent variation."),
+                Exercise("Front lever / one-arm pull-up progression", "4–6 sets", 180, "Specialize in one primary pulling skill per block."),
+                Exercise("Advanced core", "3–5 sets", 90, "Use a strict L-sit, V-sit or hanging progression."),
+                Exercise("Pull strength maintenance", "3–4 sets", 120, "Keep strict pulling strength.")
+            ),
+            4 to listOf(
+                Exercise("Reactive agility", "4–8 quality reps", 150, "Stop before speed or decision quality drops."),
+                Exercise("Dragon squat / advanced unilateral skill", "3–5 sets", 150, "Use the hardest repeatable clean progression."),
+                Exercise("Posterior-chain maintenance", "2–4 sets", 120, "Maintain hamstring strength."),
+                Exercise("Adductor maintenance", "2–4 sets", 90, "Use controlled Copenhagen or equivalent work.")
+            ),
+            5 to listOf(
+                Exercise("Freestanding handstand", "10–15 min", 60, "Accumulate quality attempts and safe exits."),
+                Exercise("HSPU specialization", "4–6 quality sets", 180, "Choose a strict progression."),
+                Exercise("Planche specialization", "4–6 quality sets", 180, "Keep each hold technically sound."),
+                Exercise("Advanced pushing / physique", "3–5 sets", 90, "Keep this supportive, not fatiguing for football.")
+            )
+        )
+    )
+
     private val recovery = listOf(
         Exercise("Easy walk or gentle movement", "5–8 min", 0, "Keep the effort easy; this is recovery, not conditioning."),
         Exercise("Ankle mobility", "2 × 10 / side", 20, "Move smoothly through a comfortable range."),
@@ -85,9 +205,54 @@ class MainActivity : Activity() {
         Exercise("Slow breathing", "2 min", 0, "Breathe calmly through the nose if comfortable.")
     )
 
+    private val levelTests: Map<Int, List<TestStandard>> = mapOf(
+        2 to listOf(
+            TestStandard("Push-ups", 40), TestStandard("Dips", 15), TestStandard("Strict pull-ups", 10),
+            TestStandard("Explosive pull-ups", 3), TestStandard("Pistol squats per leg", 8),
+            TestStandard("L-sit progression (seconds)", 30), TestStandard("Hanging leg raises", 15),
+            TestStandard("Wall handstand total (seconds)", 60), TestStandard("Consistent 10 m accelerations", 5)
+        ),
+        3 to listOf(
+            TestStandard("Strict pull-ups", 12), TestStandard("Chest-to-bar pull-ups", 5),
+            TestStandard("High explosive pull-ups", 3), TestStandard("Dips", 15),
+            TestStandard("Straight-bar dips", 8), TestStandard("Advanced tuck front lever (seconds)", 20),
+            TestStandard("Pseudo-planche push-ups", 5), TestStandard("Wall handstand total (seconds)", 90),
+            TestStandard("Handstand kick-ups", 5), TestStandard("Pistol squats per leg", 10),
+            TestStandard("Assisted dragon squats per side", 5)
+        ),
+        4 to listOf(
+            TestStandard("High chest-to-bar pull-ups", 3), TestStandard("Straight-bar dips", 10),
+            TestStandard("Controlled muscle-up transitions", 1), TestStandard("Advanced tuck / one-leg front lever (seconds)", 10),
+            TestStandard("Freestanding handstand (seconds)", 20, "handstand"),
+            TestStandard("Wall handstand (seconds)", 90, "handstand"),
+            TestStandard("HSPU negatives / partials", 5), TestStandard("Strong planche lean (seconds)", 30),
+            TestStandard("Assisted dragon squats per side", 3), TestStandard("Quality 5-10-5 shuttle runs", 5)
+        ),
+        5 to listOf(
+            TestStandard("Clean muscle-ups", 3),
+            TestStandard("Advanced front lever variation (seconds)", 10, "frontlever"),
+            TestStandard("Full / near-full front lever (seconds)", 5, "frontlever"),
+            TestStandard("Strict wall HSPU", 5), TestStandard("Freestanding handstand (seconds)", 30),
+            TestStandard("Advanced tuck / strong planche hold (seconds)", 10),
+            TestStandard("Dragon squats per side (minimal assistance)", 3),
+            TestStandard("Strict pull-ups", 15)
+        ),
+        6 to listOf(
+            TestStandard("Advanced skills performed consistently (count)", 3),
+            TestStandard("Strict pull-ups or weighted equivalent (reps)", 15),
+            TestStandard("Strict handstand push-ups (reps)", 1),
+            TestStandard("Advanced planche progression hold (seconds)", 1),
+            TestStandard("L-sit / V-sit hold (seconds)", 30),
+            TestStandard("Advanced lever progression hold (seconds)", 1),
+            TestStandard("Clean dragon squats / advanced unilateral reps per side", 1),
+            TestStandard("Football speed and agility maintained (enter 1 for yes)", 1)
+        )
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         selectedDay = prefs.getInt("next_day", 1)
+        currentLevel = prefs.getInt("current_level", 2).coerceIn(2, 6)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.rgb(12, 13, 17))
@@ -358,7 +523,7 @@ class MainActivity : Activity() {
 
     private fun showWorkout(day: Int) {
         currentScreen = "workout"; selectedDay = day; content.removeAllViews()
-        heading("DAY $day")
+        heading("LEVEL ${currentLevel.toString().padStart(2, '0')} · DAY $day")
         if (day == 3 || day == 6 || day == 7) {
             body(if (day == 7) "Full recovery day" else "Guided recovery and mobility")
             recovery.forEach { exerciseCard(it, day) }
@@ -367,7 +532,8 @@ class MainActivity : Activity() {
                 1 -> "Speed + power"; 2 -> "Pull + muscle-up preparation"
                 4 -> "Agility + posterior chain"; else -> "Push + handstand"
             })
-            workouts[day]?.forEach { exerciseCard(it, day) }
+            val dayPlan = if (currentLevel == 2) workouts[day] else advancedWorkouts[currentLevel]?.get(day)
+            dayPlan?.forEach { exerciseCard(it, day) }
         }
         actionButton("Complete day and continue") {
             val done = prefs.getInt("workouts_done", 0) + 1
@@ -618,39 +784,61 @@ class MainActivity : Activity() {
 
     private fun showTest() {
         currentScreen = "test"; content.removeAllViews()
-        heading("LEVEL 2 TEST")
-        body("Enter your best valid result for each standard. You must meet every target to pass.")
-        val standards = listOf(
-            "Push-ups" to 40, "Dips" to 15, "Strict pull-ups" to 10,
-            "Explosive pull-ups" to 3, "Pistol squats per leg" to 8,
-            "L-sit progression (seconds)" to 30, "Hanging leg raises" to 15,
-            "Wall handstand total (seconds)" to 60, "Consistent 10 m accelerations" to 5
-        )
-        val fields = mutableListOf<Pair<String, EditText>>()
-        standards.forEach { (name, target) ->
+        val level = currentLevel
+        heading(if (level == 6) "LEVEL 6 · MASTERY TEST" else "LEVEL $level TEST")
+        body("Enter your best clean result for every standard. Alternative options in the same category require only one to pass.")
+        val standards = levelTests[level] ?: levelTests[6]!!
+        val fields = mutableListOf<Pair<TestStandard, EditText>>()
+        standards.forEach { standard ->
             val row = card()
             row.addView(TextView(this).apply {
-                text = "$name · Target $target"; setTextColor(Color.WHITE); textSize = 15f
+                text = "${standard.label}  ·  Target ${standard.target}"
+                setTextColor(Color.WHITE); textSize = 14f
             })
             val edit = EditText(this).apply {
-                hint = "Your result"; setSingleLine(true)
-                inputType = InputType.TYPE_CLASS_NUMBER; setTextColor(Color.WHITE)
+                hint = "Enter result"
+                setSingleLine(true)
+                inputType = InputType.TYPE_CLASS_NUMBER
+                setTextColor(Color.WHITE)
             }
-            row.addView(edit); fields.add(name to edit)
+            row.addView(edit)
+            fields.add(standard to edit)
         }
-        actionButton("Evaluate test") {
+        actionButton(if (level == 6) "EVALUATE MASTERY TEST" else "EVALUATE LEVEL $level TEST") {
             val values = fields.map { it.second.text.toString().toIntOrNull() ?: 0 }
-            val passed = values.indices.all { values[it] >= standards[it].second }
-            if (passed) {
-                prefs.edit().putBoolean("level2_passed", true).apply()
-                Toast.makeText(this, "Level 2 passed! Level 3 unlocked.", Toast.LENGTH_LONG).show()
-                body("PASSED · Level 3 unlocked. The next level's full training plan is not included in this first build.")
+            val passedSingles = fields.indices.filter { fields[it].first.alternativeGroup == null }
+                .all { values[it] >= fields[it].first.target }
+            val groups = fields.mapNotNull { it.first.alternativeGroup }.distinct()
+            val passedGroups = groups.all { group ->
+                fields.indices.any { fields[it].first.alternativeGroup == group && values[it] >= fields[it].first.target }
+            }
+            if (passedSingles && passedGroups) {
+                if (level < 6) {
+                    val nextLevel = level + 1
+                    prefs.edit()
+                        .putInt("current_level", nextLevel)
+                        .putBoolean("level_${level}_passed", true)
+                        .apply()
+                    currentLevel = nextLevel
+                    Toast.makeText(this, "Level $level passed! Level $nextLevel unlocked.", Toast.LENGTH_LONG).show()
+                    showHome()
+                } else {
+                    prefs.edit().putBoolean("level_6_mastery_passed", true).apply()
+                    Toast.makeText(this, "Mastery standards passed. Keep specializing and retesting.", Toast.LENGTH_LONG).show()
+                    body("MASTERY STANDARD PASSED · Continue specializing in 2–3 skills while protecting football speed, agility and recovery.")
+                }
             } else {
-                val failed = fields.indices.filter { values[it] < standards[it].second }.joinToString { fields[it].first }
-                Toast.makeText(this, "Not passed yet. Retest when ready.", Toast.LENGTH_LONG).show()
-                body("Not passed yet. Standards to improve: $failed")
+                val failed = fields.indices.filter { fields[it].first.alternativeGroup == null && values[it] < fields[it].first.target }
+                    .map { fields[it].first.label }.toMutableList()
+                groups.forEach { group ->
+                    val groupIndices = fields.indices.filter { fields[it].first.alternativeGroup == group }
+                    if (groupIndices.none { values[it] >= fields[it].first.target }) {
+                        failed.add(groupIndices.joinToString(" OR ") { fields[it].first.label })
+                    }
+                }
+                Toast.makeText(this, "Not passed yet. Keep training and retest when ready.", Toast.LENGTH_LONG).show()
+                body("NOT PASSED YET · Standards to improve:\n" + failed.joinToString("\n"))
             }
         }
         attachTimerPanelIfNeeded()
-    }
-}
+    }}
