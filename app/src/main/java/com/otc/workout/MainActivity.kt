@@ -574,11 +574,25 @@ class MainActivity : Activity() {
             ex.name.contains("shuttle", true) -> "shuttle"
             else -> ex.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
         }
-        val demoHtml = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head><body style='margin:0;width:100%;height:100%;background:#121318;display:flex;align-items:center;justify-content:center;overflow:hidden'><img src='demos/" + slug + ".svg' style='width:100%;height:100%;object-fit:contain;display:block'></body></html>"
+        val videoName = when {
+            ex.name.equals("Acceleration", true) -> "run.mp4"
+            ex.name.equals("Calf raise", true) -> "calf_raise.mp4"
+            else -> null
+        }
+        val has3dVideo = videoName?.let { file ->
+            try { assets.open("demos3d/" + file).use { true } } catch (_: Exception) { false }
+        } ?: false
+        val mediaHtml = if (has3dVideo) {
+            "<video autoplay loop muted playsinline preload='auto' style='width:100%;height:100%;object-fit:contain;background:#101218' src='demos3d/" + videoName + "'></video>"
+        } else {
+            "<img src='demos/" + slug + ".svg' style='width:100%;height:100%;object-fit:contain;display:block'>"
+        }
+        val demoHtml = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head><body style='margin:0;width:100%;height:100%;background:#121318;display:flex;align-items:center;justify-content:center;overflow:hidden'>" + mediaHtml + "</body></html>"
         val demoView = WebView(this).apply {
             setBackgroundColor(Color.rgb(18, 19, 24))
             settings.javaScriptEnabled = false
             settings.allowFileAccess = true
+            settings.mediaPlaybackRequiresUserGesture = false
             isVerticalScrollBarEnabled = false
             isHorizontalScrollBarEnabled = false
             overScrollMode = android.view.View.OVER_SCROLL_NEVER

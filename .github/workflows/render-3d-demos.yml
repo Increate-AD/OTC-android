@@ -1,0 +1,86 @@
+name: Render offline 3D exercise demos
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/render-3d-demos.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout OTC
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout open 3D exercise pipeline
+        uses: actions/checkout@v4
+        with:
+          repository: AssiamahS/opengym3d
+          ref: ea3a60130fdcfb3c4771e44d09f84ebab4ee9bae
+          path: opengym3d
+
+      - name: Install render dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6 ffmpeg
+
+      - name: Install Blender
+        run: |
+          curl -sL "https://download.blender.org/release/Blender4.5/blender-4.5.11-linux-x64.tar.xz" | tar xJ -C "$HOME"
+          mv "$HOME/blender-4.5.11-linux-x64" "$HOME/blender"
+
+      - name: Render anatomically shaped 3D human animations
+        env:
+          FITX_ECORCHE: "0"
+        run: |
+          cd opengym3d
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("pipeline/build_exercise.py")
+          s = p.read_text()
+          old = "scene.render.resolution_x = scene.render.resolution_y = 240"
+          if old not in s:
+              raise SystemExit("Expected animation render resolution not found")
+          p.write_text(s.replace(old, "scene.render.resolution_x = scene.render.resolution_y = 360"))
+          PY
+          mkdir -p site/assets
+          for id in run jog walk calf_raise push_up jumping_jack bear_crawl; do
+            echo "Rendering $id"
+            "$HOME/blender/blender" -b -noaudio --python-exit-code 1 -P pipeline/build_exercise.py -- "exercises/$id.json" site/assets
+            test -d "site/assets/frames_$id"
+            ffmpeg -y -v error -framerate 15 -pattern_type glob -i "site/assets/frames_$id/*.png" -c:v libx264 -crf 22 -preset veryfast -pix_fmt yuv420p -movflags +faststart "site/assets/$id.mp4"
+            test -s "site/assets/$id.mp4"
+            rm -rf "site/assets/frames_$id"
+          done
+
+      - name: Copy offline videos into OTC
+        run: |
+          mkdir -p app/src/main/assets/demos3d
+          cp opengym3d/site/assets/{run,jog,walk,calf_raise,push_up,jumping_jack,bear_crawl}.mp4 app/src/main/assets/demos3d/
+          cat > app/src/main/assets/demos3d/ATTRIBUTION.txt <<'EOF'
+          OTC 3D exercise demos
+          Human figure: MakeHuman / MPFB2, generated under CC0 1.0.
+          Motion clips: Mesh2Motion / Quaternius, CC0 1.0 where applicable.
+          Rendering pipeline: OpenGym3D, MIT license.
+          The videos are rendered locally by GitHub Actions and bundled for offline playback.
+          EOF
+
+      - name: Commit generated videos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/assets/demos3d
+          if git diff --cached --quiet; then
+            echo "No generated video changes."
+          else
+            git commit -m "Add offline 3D human exercise demos"
+            git push
+          fi
