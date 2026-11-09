@@ -576,7 +576,12 @@ class MainActivity : Activity() {
         }
         val videoName = when {
             ex.name.equals("Acceleration", true) -> "run.mp4"
-            ex.name.equals("Calf raise", true) -> "calf_raise.mp4"
+            ex.name.equals("Calf raise", true) || ex.name.contains("calf / tibialis", true) -> "calf_raise.mp4"
+            ex.name.equals("Easy walk or gentle movement", true) || ex.name.equals("Walk", true) -> "walk.mp4"
+            ex.name.equals("Jog", true) || ex.name.contains("jogging", true) -> "jog.mp4"
+            ex.name.equals("Jumping jack", true) || ex.name.equals("Jumping jacks", true) -> "jumping_jack.mp4"
+            ex.name.equals("Bear crawl", true) -> "bear_crawl.mp4"
+            ex.name.equals("Push-up", true) || ex.name.equals("Push-ups", true) -> "push_up.mp4"
             else -> null
         }
         val has3dVideo = videoName?.let { file ->
