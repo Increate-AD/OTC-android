@@ -1,6 +1,7 @@
 package com.otc.workout
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -9,6 +10,7 @@ import android.graphics.Typeface
 import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -16,14 +18,26 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import android.content.Context
+import android.text.InputType
+import org.json.JSONArray
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class Exercise(val name: String, val target: String, val restSeconds: Int, val cue: String)
+data class SetRecord(val id: Long, val day: Int, val exercise: String, val value: String, val timestamp: Long)
 
 class MainActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("otc_data", Context.MODE_PRIVATE) }
     private val handler = Handler(Looper.getMainLooper())
     private var timerSeconds = 0
+    private var timerActive = false
+    private var timerPaused = false
     private var timerRunnable: Runnable? = null
+    private var timerPanel: LinearLayout? = null
+    private var timerLabel: TextView? = null
+    private var pauseButton: Button? = null
     private lateinit var content: LinearLayout
     private var selectedDay = 1
     private var currentScreen = "home"
@@ -78,14 +92,12 @@ class MainActivity : Activity() {
             setPadding(20, 18, 20, 14)
         }
         root.addView(TextView(this).apply {
-            text = "OTC"
-            setTextColor(Color.WHITE); textSize = 28f; typeface = Typeface.DEFAULT_BOLD
-            setPadding(4, 10, 4, 2)
+            text = "OTC"; setTextColor(Color.WHITE); textSize = 28f
+            typeface = Typeface.DEFAULT_BOLD; setPadding(4, 10, 4, 2)
         })
         root.addView(TextView(this).apply {
-            text = "OUTWORK THE CHALLENGE"
-            setTextColor(Color.rgb(190, 55, 70)); textSize = 10f
-            letterSpacing = 0.18f; setPadding(5, 0, 4, 12)
+            text = "OUTWORK THE CHALLENGE"; setTextColor(Color.rgb(190, 55, 70))
+            textSize = 10f; letterSpacing = 0.18f; setPadding(5, 0, 4, 12)
         })
         val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         nav.addView(navButton("Home") { showHome() }, weightParams())
@@ -106,18 +118,12 @@ class MainActivity : Activity() {
 
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
-        if (currentScreen != "home") {
-            showHome()
-        } else {
-            super.onBackPressed()
-        }
+        if (currentScreen != "home") showHome() else super.onBackPressed()
     }
 
     private fun weightParams() = LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(2, 4, 2, 4) }
     private fun navButton(label: String, action: () -> Unit) = Button(this).apply {
-        text = label; textSize = 10f
-        isAllCaps = false
-        setTextColor(Color.WHITE)
+        text = label; textSize = 10f; isAllCaps = false; setTextColor(Color.WHITE)
         backgroundTintList = ColorStateList.valueOf(Color.rgb(39, 41, 51))
         setOnClickListener { action() }
     }
@@ -136,43 +142,66 @@ class MainActivity : Activity() {
     private fun card(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL; setPadding(14, 12, 14, 12)
         background = GradientDrawable().apply {
-            setColor(Color.rgb(29, 31, 40))
-            cornerRadius = 18f
+            setColor(Color.rgb(29, 31, 40)); cornerRadius = 18f
             setStroke(1, Color.rgb(55, 48, 57))
         }
         content.addView(this, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 7, 0, 7) })
     }
     private fun actionButton(label: String, action: () -> Unit) {
         content.addView(Button(this).apply {
-            text = label
-            isAllCaps = false
-            textSize = 14f
-            setTextColor(Color.WHITE)
+            text = label; isAllCaps = false; textSize = 14f; setTextColor(Color.WHITE)
             backgroundTintList = ColorStateList.valueOf(Color.rgb(133, 28, 45))
             setOnClickListener { action() }
-        },
-            LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 6, 0, 6) })
+        }, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 6, 0, 6) })
+    }
+
+    private fun loadRecords(): MutableList<SetRecord> {
+        val result = mutableListOf<SetRecord>()
+        val array = JSONArray(prefs.getString("set_history_json", "[]"))
+        for (i in 0 until array.length()) {
+            val item = array.optJSONObject(i) ?: continue
+            result.add(SetRecord(
+                item.optLong("id"), item.optInt("day"), item.optString("exercise"),
+                item.optString("value"), item.optLong("timestamp")
+            ))
+        }
+        return result
+    }
+
+    private fun saveRecords(records: List<SetRecord>) {
+        val array = JSONArray()
+        records.forEach { record ->
+            array.put(JSONObject().apply {
+                put("id", record.id); put("day", record.day); put("exercise", record.exercise)
+                put("value", record.value); put("timestamp", record.timestamp)
+            })
+        }
+        prefs.edit().putString("set_history_json", array.toString()).apply()
+    }
+
+    private fun addRecord(day: Int, exercise: String, value: String): Int {
+        val records = loadRecords()
+        records.add(SetRecord(System.currentTimeMillis(), day, exercise, value, System.currentTimeMillis()))
+        saveRecords(records)
+        prefs.edit().putString("last_$exercise", value).apply()
+        return records.count { it.day == day && it.exercise == exercise }
     }
 
     private fun showHome() {
-        currentScreen = "home"
-        content.removeAllViews()
+        currentScreen = "home"; content.removeAllViews()
         heading("LEVEL 02")
         body("FOOTBALL-FIRST CALISTHENICS", 11f)
         val stats = card()
         stats.addView(TextView(this).apply {
-            text = "YOUR TRAINING STATUS"
-            setTextColor(Color.rgb(204, 70, 83)); textSize = 11f
-            letterSpacing = 0.12f; typeface = Typeface.DEFAULT_BOLD
+            text = "YOUR TRAINING STATUS"; setTextColor(Color.rgb(204, 70, 83))
+            textSize = 11f; letterSpacing = 0.12f; typeface = Typeface.DEFAULT_BOLD
         })
         stats.addView(TextView(this).apply {
-            text = "${prefs.getInt("workouts_done", 0)}"
-            setTextColor(Color.WHITE); textSize = 34f; typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 8, 0, 0)
+            text = "${prefs.getInt("workouts_done", 0)}"; setTextColor(Color.WHITE)
+            textSize = 34f; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 8, 0, 0)
         })
         stats.addView(TextView(this).apply {
-            text = "WORKOUTS COMPLETED"
-            setTextColor(Color.rgb(180, 185, 198)); textSize = 11f
+            text = "WORKOUTS COMPLETED"; setTextColor(Color.rgb(180, 185, 198)); textSize = 11f
         })
         stats.addView(TextView(this).apply {
             text = "STREAK  ·  ${prefs.getInt("streak", 0)} days       NEXT  ·  Day $selectedDay"
@@ -181,32 +210,27 @@ class MainActivity : Activity() {
         heading("YOUR WEEK")
         for (day in 1..7) {
             val label = when (day) {
-                3 -> "Day 3 · Recovery"
-                6 -> "Day 6 · Mobility"
-                7 -> "Day 7 · Full recovery"
+                3 -> "Day 3 · Recovery"; 6 -> "Day 6 · Mobility"; 7 -> "Day 7 · Full recovery"
                 else -> "Day $day · Training"
             }
             actionButton(label) { showWorkout(day) }
         }
         body("Keep the sequence. If you miss a day, continue when ready—never double up to catch up.", 13f)
+        attachTimerPanelIfNeeded()
     }
 
     private fun showWorkout(day: Int) {
-        currentScreen = "workout"
-        selectedDay = day
-        content.removeAllViews()
+        currentScreen = "workout"; selectedDay = day; content.removeAllViews()
         heading("DAY $day")
         if (day == 3 || day == 6 || day == 7) {
             body(if (day == 7) "Full recovery day" else "Guided recovery and mobility")
-            recovery.forEach { exerciseCard(it, "recovery_$day") }
+            recovery.forEach { exerciseCard(it, day) }
         } else {
             body(when (day) {
-                1 -> "Speed + power"
-                2 -> "Pull + muscle-up preparation"
-                4 -> "Agility + posterior chain"
-                else -> "Push + handstand"
+                1 -> "Speed + power"; 2 -> "Pull + muscle-up preparation"
+                4 -> "Agility + posterior chain"; else -> "Push + handstand"
             })
-            workouts[day]?.forEach { exerciseCard(it, "day_$day") }
+            workouts[day]?.forEach { exerciseCard(it, day) }
         }
         actionButton("Complete day and continue") {
             val done = prefs.getInt("workouts_done", 0) + 1
@@ -217,9 +241,10 @@ class MainActivity : Activity() {
             Toast.makeText(this, "Day saved. Next: Day $next", Toast.LENGTH_LONG).show()
             showHome()
         }
+        attachTimerPanelIfNeeded()
     }
 
-    private fun exerciseCard(ex: Exercise, key: String) {
+    private fun exerciseCard(ex: Exercise, day: Int) {
         val c = card()
         c.addView(TextView(this).apply {
             text = ex.name; textSize = 17f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE)
@@ -237,24 +262,20 @@ class MainActivity : Activity() {
         }
         c.addView(input)
         val logged = TextView(this).apply {
-            text = "Sets logged: ${prefs.getInt("${key}_${ex.name}_sets", 0)}"
+            text = "Sets logged: ${loadRecords().count { it.day == day && it.exercise == ex.name }}"
             setTextColor(Color.rgb(210, 210, 220))
         }
         c.addView(logged)
         c.addView(Button(this).apply {
-            text = "Log completed set"
-            isAllCaps = false
-            setTextColor(Color.WHITE)
+            text = "Log completed set"; isAllCaps = false; setTextColor(Color.WHITE)
             backgroundTintList = ColorStateList.valueOf(Color.rgb(133, 28, 45))
             setOnClickListener {
                 val value = input.text.toString().trim()
                 if (value.isEmpty()) {
                     Toast.makeText(this@MainActivity, "Enter what you actually completed.", Toast.LENGTH_SHORT).show()
                 } else {
-                    val storageKey = "${key}_${ex.name}_sets"
-                    val n = prefs.getInt(storageKey, 0) + 1
-                    prefs.edit().putInt(storageKey, n).putString("last_${ex.name}", value).apply()
-                    logged.text = "Sets logged: $n · Last: $value"
+                    val count = addRecord(day, ex.name, value)
+                    logged.text = "Sets logged: $count · Last: $value"
                     input.text.clear()
                     if (ex.restSeconds > 0) startRest(ex.restSeconds)
                 }
@@ -262,45 +283,167 @@ class MainActivity : Activity() {
         })
     }
 
+    private fun attachTimerPanelIfNeeded() {
+        if (timerSeconds > 0 || timerActive) renderTimerPanel()
+    }
+
+    private fun renderTimerPanel() {
+        timerPanel?.let { if (it.parent === content) content.removeView(it) }
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; setPadding(14, 10, 14, 10)
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(65, 24, 34)); cornerRadius = 16f
+                setStroke(1, Color.rgb(160, 48, 64))
+            }
+        }
+        timerLabel = TextView(this).apply {
+            textSize = 25f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER; text = timerText()
+        }
+        panel.addView(timerLabel)
+        val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        val minus = smallTimerButton("-15s") { adjustTimer(-15) }
+        pauseButton = smallTimerButton(if (timerPaused) "Resume" else "Pause") { toggleTimerPause() }
+        val plus = smallTimerButton("+15s") { adjustTimer(15) }
+        val skip = smallTimerButton("Skip") { skipTimer() }
+        controls.addView(minus, weightParams()); controls.addView(pauseButton, weightParams())
+        controls.addView(plus, weightParams()); controls.addView(skip, weightParams())
+        panel.addView(controls)
+        timerPanel = panel
+        content.addView(panel, 0, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, 10) })
+    }
+
+    private fun smallTimerButton(label: String, action: () -> Unit) = Button(this).apply {
+        text = label; textSize = 10f; isAllCaps = false; setTextColor(Color.WHITE)
+        backgroundTintList = ColorStateList.valueOf(Color.rgb(95, 37, 49))
+        setOnClickListener { action() }
+    }
+
+    private fun timerText(): String = when {
+        timerSeconds <= 0 -> "REST COMPLETE"
+        else -> "REST  %02d:%02d".format(timerSeconds / 60, timerSeconds % 60)
+    }
+
+    private fun updateTimerDisplay() {
+        timerLabel?.text = timerText()
+        pauseButton?.text = if (timerPaused) "Resume" else "Pause"
+    }
+
     private fun startRest(seconds: Int) {
         timerRunnable?.let { handler.removeCallbacks(it) }
-        timerSeconds = seconds
-        val timerView = TextView(this).apply {
-            textSize = 22f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER; setPadding(0, 10, 0, 10)
-        }
-        content.addView(timerView, 0)
+        timerSeconds = seconds; timerActive = true; timerPaused = false
+        renderTimerPanel()
+        scheduleTimerTick()
+    }
+
+    private fun scheduleTimerTick() {
+        timerRunnable?.let { handler.removeCallbacks(it) }
+        if (!timerActive || timerPaused) return
         val tick = object : Runnable {
             override fun run() {
-                timerView.text = "REST  %02d:%02d".format(timerSeconds / 60, timerSeconds % 60)
-                if (timerSeconds > 0) { timerSeconds--; handler.postDelayed(this, 1000) }
-                else timerView.text = "REST COMPLETE"
+                if (!timerActive || timerPaused) return
+                if (timerSeconds > 0) timerSeconds--
+                updateTimerDisplay()
+                if (timerSeconds > 0) handler.postDelayed(this, 1000)
+                else timerActive = false
             }
         }
         timerRunnable = tick
-        handler.post(tick)
-        content.addView(Button(this).apply {
-            text = "Skip rest"
-            setOnClickListener { handler.removeCallbacks(tick); timerView.text = "REST SKIPPED" }
-        }, LinearLayout.LayoutParams(-1, -2))
+        handler.postDelayed(tick, 1000)
+    }
+
+    private fun toggleTimerPause() {
+        if (!timerActive) return
+        timerPaused = !timerPaused
+        if (timerPaused) timerRunnable?.let { handler.removeCallbacks(it) } else scheduleTimerTick()
+        updateTimerDisplay()
+    }
+
+    private fun adjustTimer(delta: Int) {
+        timerSeconds = (timerSeconds + delta).coerceIn(0, 3600)
+        if (timerSeconds == 0) {
+            timerActive = false; timerPaused = false
+            timerRunnable?.let { handler.removeCallbacks(it) }
+        } else if (timerActive && !timerPaused) scheduleTimerTick()
+        updateTimerDisplay()
+    }
+
+    private fun skipTimer() {
+        timerRunnable?.let { handler.removeCallbacks(it) }
+        timerActive = false; timerPaused = false; timerSeconds = 0
+        updateTimerDisplay()
     }
 
     private fun showHistory() {
-        currentScreen = "history"
-        content.removeAllViews()
+        currentScreen = "history"; content.removeAllViews()
         heading("TRAINING HISTORY")
         body("Completed workouts: ${prefs.getInt("workouts_done", 0)}")
         body("Streak: ${prefs.getInt("streak", 0)} days")
-        heading("RECENT SET RECORDS")
-        listOf("Pistol squat", "Pull-up", "Dips", "Wall handstand", "L-sit").forEach { name ->
-            body("$name: ${prefs.getString("last_$name", "No result yet")}")
+        heading("ALL SET RECORDS")
+        val records = loadRecords().sortedByDescending { it.timestamp }
+        if (records.isEmpty()) {
+            body("No set records yet. Log your first completed set in a workout.")
+        } else {
+            val formatter = SimpleDateFormat("MMM d, yyyy · HH:mm", Locale.getDefault())
+            records.forEach { record ->
+                val item = card()
+                item.addView(TextView(this).apply {
+                    text = record.exercise; textSize = 16f; typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Color.WHITE)
+                })
+                item.addView(TextView(this).apply {
+                    text = "Day ${record.day}  ·  ${record.value}\n${formatter.format(Date(record.timestamp))}"
+                    textSize = 13f; setTextColor(Color.rgb(190, 195, 207)); setPadding(0, 5, 0, 8)
+                })
+                val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                actions.addView(Button(this).apply {
+                    text = "Edit"; isAllCaps = false; setOnClickListener { editRecord(record) }
+                }, weightParams())
+                actions.addView(Button(this).apply {
+                    text = "Delete"; isAllCaps = false; setOnClickListener { confirmDeleteRecord(record) }
+                }, weightParams())
+                item.addView(actions)
+            }
         }
-        body("Set logs are stored locally on this phone. Editing older records and backup/export are not included in this first build.", 13f)
+        attachTimerPanelIfNeeded()
+    }
+
+    private fun editRecord(record: SetRecord) {
+        val input = EditText(this).apply {
+            setText(record.value); setSingleLine(true); setTextColor(Color.BLACK)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Edit set result")
+            .setView(input)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ ->
+                val newValue = input.text.toString().trim()
+                if (newValue.isNotEmpty()) {
+                    val updated = loadRecords().map {
+                        if (it.id == record.id) it.copy(value = newValue) else it
+                    }
+                    saveRecords(updated)
+                    showHistory()
+                    Toast.makeText(this, "Set record updated.", Toast.LENGTH_SHORT).show()
+                }
+            }.show()
+    }
+
+    private fun confirmDeleteRecord(record: SetRecord) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete set record?")
+            .setMessage("This removes only this saved set result.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Delete") { _, _ ->
+                saveRecords(loadRecords().filterNot { it.id == record.id })
+                showHistory()
+                Toast.makeText(this, "Set record deleted.", Toast.LENGTH_SHORT).show()
+            }.show()
     }
 
     private fun showTest() {
-        currentScreen = "test"
-        content.removeAllViews()
+        currentScreen = "test"; content.removeAllViews()
         heading("LEVEL 2 TEST")
         body("Enter your best valid result for each standard. You must meet every target to pass.")
         val standards = listOf(
@@ -312,10 +455,12 @@ class MainActivity : Activity() {
         val fields = mutableListOf<Pair<String, EditText>>()
         standards.forEach { (name, target) ->
             val row = card()
-            row.addView(TextView(this).apply { text = "$name · Target $target"; setTextColor(Color.WHITE); textSize = 15f })
+            row.addView(TextView(this).apply {
+                text = "$name · Target $target"; setTextColor(Color.WHITE); textSize = 15f
+            })
             val edit = EditText(this).apply {
                 hint = "Your result"; setSingleLine(true)
-                inputType = android.text.InputType.TYPE_CLASS_NUMBER; setTextColor(Color.WHITE)
+                inputType = InputType.TYPE_CLASS_NUMBER; setTextColor(Color.WHITE)
             }
             row.addView(edit); fields.add(name to edit)
         }
@@ -332,5 +477,6 @@ class MainActivity : Activity() {
                 body("Not passed yet. Standards to improve: $failed")
             }
         }
+        attachTimerPanelIfNeeded()
     }
 }
