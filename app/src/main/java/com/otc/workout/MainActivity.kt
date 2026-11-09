@@ -173,14 +173,15 @@ class MainActivity : Activity() {
         action: () -> Unit
     ) = TextView(this).apply {
         text = label
-        textSize = 14f
-        typeface = Typeface.DEFAULT_BOLD
+        textSize = 13f
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         gravity = Gravity.CENTER
         setTextColor(Color.WHITE)
+        includeFontPadding = false
         minHeight = height
         isClickable = true
         isFocusable = true
-        setPadding(10, 8, 10, 8)
+        setPadding(10, 0, 10, 0)
         background = GradientDrawable().apply {
             setColor(backgroundColor)
             cornerRadius = 12f
@@ -329,14 +330,18 @@ class MainActivity : Activity() {
             }
         }
         timerLabel = TextView(this).apply {
-            textSize = 25f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER; text = timerText()
+            textSize = 23f; typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            includeFontPadding = false
+            setTextColor(Color.WHITE); gravity = Gravity.CENTER
+            setPadding(0, 6, 0, 4); text = timerText()
         }
         panel.addView(timerLabel)
         panel.addView(TextView(this).apply {
-            text = "REST CONTROLS"; textSize = 11f; typeface = Typeface.DEFAULT_BOLD
-            letterSpacing = 0.12f; setTextColor(Color.rgb(235, 185, 192))
-            gravity = Gravity.CENTER; setPadding(0, 8, 0, 8)
+            text = "REST CONTROLS"; textSize = 10f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            includeFontPadding = false
+            letterSpacing = 0.08f; setTextColor(Color.rgb(235, 185, 192))
+            gravity = Gravity.CENTER; setPadding(0, 7, 0, 7)
         })
         val topRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
         val bottomRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
@@ -428,16 +433,43 @@ class MainActivity : Activity() {
             records.forEach { record ->
                 val item = card()
                 item.addView(TextView(this).apply {
-                    text = record.exercise; textSize = 16f; typeface = Typeface.DEFAULT_BOLD
+                    text = record.exercise
+                    textSize = 17f
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    includeFontPadding = false
                     setTextColor(Color.WHITE)
+                    setPadding(0, 0, 0, 8)
                 })
                 item.addView(TextView(this).apply {
-                    text = "Day ${record.day}  ·  ${record.value}\n${formatter.format(Date(record.timestamp))}"
-                    textSize = 13f; setTextColor(Color.rgb(190, 195, 207)); setPadding(0, 5, 0, 8)
+                    text = "DAY ${record.day}"
+                    textSize = 11f
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    includeFontPadding = false
+                    setTextColor(Color.rgb(220, 155, 166))
+                    setPadding(0, 0, 0, 4)
                 })
-                val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                actions.addView(controlButton("EDIT", 52, Color.rgb(65, 75, 95)) { editRecord(record) }, navParams())
-                actions.addView(controlButton("DELETE", 52, Color.rgb(133, 28, 45)) { confirmDeleteRecord(record) }, navParams())
+                item.addView(TextView(this).apply {
+                    text = "RESULT  ·  ${record.value}"
+                    textSize = 14f
+                    includeFontPadding = false
+                    setTextColor(Color.rgb(225, 227, 234))
+                    setPadding(0, 0, 0, 5)
+                })
+                item.addView(TextView(this).apply {
+                    text = formatter.format(Date(record.timestamp))
+                    textSize = 12f
+                    includeFontPadding = false
+                    setTextColor(Color.rgb(165, 171, 185))
+                    setPadding(0, 0, 0, 12)
+                })
+                val actions = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+                actions.addView(controlButton("EDIT", 48, Color.rgb(65, 75, 95)) { editRecord(record) },
+                    LinearLayout.LayoutParams(0, 52, 1f).apply { setMargins(4, 2, 4, 2) })
+                actions.addView(controlButton("DELETE", 48, Color.rgb(133, 28, 45)) { confirmDeleteRecord(record) },
+                    LinearLayout.LayoutParams(0, 52, 1f).apply { setMargins(4, 2, 4, 2) })
                 item.addView(actions)
             }
         }
