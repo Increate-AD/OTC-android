@@ -17,6 +17,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import android.webkit.WebView
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -547,6 +548,41 @@ class MainActivity : Activity() {
         attachTimerPanelIfNeeded()
     }
 
+
+    private fun showExerciseDemo(ex: Exercise) {
+        val instructions = when {
+            ex.name.contains("pull-up", true) -> "SETUP\\nGrip a secure bar slightly wider than shoulder width. Start from a controlled hang.\\n\\nEXECUTION\\n1. Brace your abdomen and keep legs quiet.\\n2. Draw shoulders down, then pull elbows toward your ribs.\\n3. Bring chin over the bar without craning your neck.\\n4. Lower smoothly to the hang.\\n\\nCUES\\nNo kicking, swinging or half-reps."
+            ex.name.contains("dip", true) -> "SETUP\\nTake support on stable parallel bars; keep shoulders active.\\n\\nEXECUTION\\n1. Bend elbows and lower under control.\\n2. Stop at a comfortable shoulder depth.\\n3. Press back to support without shrugging.\\n\\nCUES\\nDo not force excessive depth or let shoulders roll forward."
+            ex.name.contains("pistol", true) || ex.name.contains("dragon", true) -> "SETUP\\nStand beside a stable support and balance on one foot.\\n\\nEXECUTION\\n1. Brace your trunk and reach the free leg forward.\\n2. Sit down slowly; track the working knee over the toes.\\n3. Use support as needed, then stand with control.\\n\\nCUES\\nKeep the whole foot grounded. Reduce depth before balance or alignment breaks."
+            ex.name.contains("push-up", true) || ex.name.contains("pike", true) -> "SETUP\\nPlace hands firmly; brace abdomen and glutes.\\n\\nEXECUTION\\n1. Keep the body aligned.\\n2. Bend elbows and lower under control.\\n3. Push the floor away to return.\\n\\nCUES\\nAvoid flared elbows, sagging hips and forced range."
+            ex.name.contains("handstand", true) -> "SETUP\\nUse a clear wall and non-slip floor. Only kick up if you can exit safely.\\n\\nEXECUTION\\n1. Place hands shoulder-width apart.\\n2. Enter the wall position gently.\\n3. Push tall through shoulders and keep ribs controlled.\\n4. Exit safely before form breaks.\\n\\nCUES\\nKeep head neutral; never practice near obstacles."
+            ex.name.contains("front lever", true) || ex.name.contains("l-sit", true) -> "SETUP\\nUse secure bars and begin with a progression you can hold cleanly.\\n\\nEXECUTION\\n1. Depress shoulders and brace abdomen.\\n2. Lift into the tuck or leg position without swinging.\\n3. Hold while breathing, then lower with control.\\n\\nCUES\\nEnd the hold when shoulder or trunk position changes."
+            ex.name.contains("nordic", true) -> "SETUP\\nKneel on padding with ankles securely anchored. Use hand or band assistance.\\n\\nEXECUTION\\n1. Align hips, trunk and thighs.\\n2. Lean forward slowly, resisting the fall.\\n3. Catch with hands and assist back to start.\\n\\nCUES\\nKeep the lowering smooth; do not force an unassisted rep."
+            ex.name.contains("copenhagen", true) -> "SETUP\\nLie on your side with top knee or ankle supported on a stable bench.\\n\\nEXECUTION\\n1. Place elbow under shoulder.\\n2. Lift hips until trunk and legs align.\\n3. Hold while breathing, then lower slowly.\\n\\nCUES\\nKeep hips stacked; use knee support to make it easier."
+            ex.name.contains("acceleration", true) || ex.name.contains("shuttle", true) || ex.name.contains("lateral", true) || ex.name.contains("bound", true) -> "SETUP\\nUse a flat, non-slip surface with plenty of clear space. Warm up first.\\n\\nEXECUTION\\n1. Start in a balanced athletic stance.\\n2. Drive forcefully with coordinated arm action.\\n3. For direction changes, lower hips and brake progressively.\\n4. Recover fully between fast efforts.\\n\\nCUES\\nStop when speed, balance or landing quality drops."
+            else -> "SETUP\\nChoose a stable stance and prepare the joints involved.\\n\\nEXECUTION\\n1. Move through a comfortable range.\\n2. Keep trunk braced and joints aligned.\\n3. Return slowly and repeat.\\n\\nCUES\\nUse smooth reps; avoid momentum."
+        }
+        val fullText = instructions + "\\n\\nBREATHING\\nExhale through the effort; inhale on the controlled return. Keep breathing during holds.\\n\\nCOMMON MISTAKES\\nRushing, losing alignment, using momentum, or continuing after technique breaks.\\n\\nSAFETY\\nUse stable equipment and a pain-free range. Stop for sharp pain, dizziness or unusual joint pain.\\n\\nTARGET\\n" + ex.target + "   |   REST   " + (if (ex.restSeconds > 0) ex.restSeconds.toString() + " sec" else "No timer")
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 8, 16, 8) }
+        val gif = WebView(this).apply {
+            setBackgroundColor(Color.rgb(18, 19, 24))
+            settings.javaScriptEnabled = false
+            settings.allowFileAccess = true
+            layoutParams = LinearLayout.LayoutParams(-1, 190)
+            loadUrl("file:///android_asset/demos/" + ex.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-') + ".gif")
+        }
+        panel.addView(gif)
+        panel.addView(TextView(this).apply {
+            text = fullText
+            setTextColor(Color.rgb(225, 227, 234))
+            textSize = 14f
+            setPadding(2, 14, 2, 8)
+        })
+        AlertDialog.Builder(this).setTitle(ex.name.uppercase(Locale.getDefault()))
+            .setView(ScrollView(this).apply { addView(panel) })
+            .setPositiveButton("CLOSE", null).show()
+    }
+
     private fun exerciseCard(ex: Exercise, day: Int) {
         val c = card()
         c.addView(TextView(this).apply {
@@ -557,6 +593,7 @@ class MainActivity : Activity() {
             setTextColor(Color.rgb(180, 185, 198)); textSize = 13f; setPadding(0, 5, 0, 5)
         })
         c.addView(TextView(this).apply { text = ex.cue; setTextColor(Color.LTGRAY); textSize = 13f })
+        c.addView(controlButton("HOW TO PERFORM  ·  DEMO", 48, Color.rgb(65, 75, 95)) { showExerciseDemo(ex) })
         val input = EditText(this).apply {
             hint = "Actual reps / seconds / result"; setSingleLine(true)
             setTextColor(Color.WHITE); setHintTextColor(Color.GRAY)
