@@ -1,25 +1,25 @@
 # OTC offline exercise demos
 
-GIFs are bundled in this directory and loaded locally by the exercise demo viewer (no network required).
+Original animated SVG exercise illustrations are bundled locally and displayed by the exercise demo viewer. They work offline and require no network connection.
 
-Expected Level 2 demo assets:
-- acceleration.gif
-- bounds.gif
-- pistol-squat.gif
-- split-squat.gif
-- calf-raise.gif
-- pull-up.gif
-- explosive-pull-up.gif
-- dips.gif
-- front-lever.gif
-- l-sit-progression.gif
-- shuttle.gif
-- lateral-acceleration.gif
-- nordic-hamstring-curl.gif
-- copenhagen-plank.gif
-- assisted-dragon-squat.gif
-- decline-pseudo-planche-push-up.gif
-- pike-push-up.gif
-- wall-handstand.gif
+Level 2 demo assets:
+- acceleration.svg
+- bounds.svg
+- pistol-squat.svg
+- split-squat.svg
+- calf-raise.svg
+- pull-up.svg
+- explosive-pull-up.svg
+- dips.svg
+- front-lever.svg
+- l-sit-progression.svg
+- shuttle.svg
+- lateral-acceleration.svg
+- nordic-hamstring-curl.svg
+- copenhagen-plank.svg
+- assisted-dragon-squat.svg
+- decline-pseudo-planche-push-up.svg
+- pike-push-up.svg
+- wall-handstand.svg
 
-Each GIF should be a clear looping movement demonstration with a neutral background, full-body framing, and no embedded instructional text. Keep files optimized for offline APK size.
+These are lightweight schematic animations, not photorealistic videos. Keep the SVGs self-contained so the demos remain available offline in the APK.

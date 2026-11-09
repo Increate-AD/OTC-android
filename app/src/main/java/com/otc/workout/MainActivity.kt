@@ -570,7 +570,7 @@ class MainActivity : Activity() {
             settings.allowFileAccess = true
             layoutParams = LinearLayout.LayoutParams(-1, 190)
             val slug = ex.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
-            loadDataWithBaseURL("file:///android_asset/", "<html><body style='margin:0;background:#121318;color:#d6a0aa;font:14px sans-serif;text-align:center'><img src='demos/" + slug + ".gif' style='max-width:100%;max-height:185px' onerror='this.style.display=\\"none\\";document.getElementById(\\"fallback\\").style.display=\\"block\\"'><div id='fallback' style='display:none;padding:24px'>ANIMATED OFFLINE DEMO COMING IN THE NEXT ASSET PACK</div></body></html>", "text/html", "UTF-8", null)
+            loadDataWithBaseURL("file:///android_asset/", "<html><body style='margin:0;background:#121318;color:#d6a0aa;font:14px sans-serif;text-align:center'><img src='demos/" + slug + ".svg' style='max-width:100%;max-height:185px' onerror='this.style.display=\\"none\\";document.getElementById(\\"fallback\\").style.display=\\"block\\"'><div id='fallback' style='display:none;padding:24px'>ANIMATED OFFLINE DEMO COMING IN THE NEXT ASSET PACK</div></body></html>", "text/html", "UTF-8", null)
         }
         panel.addView(gif)
         panel.addView(TextView(this).apply {
