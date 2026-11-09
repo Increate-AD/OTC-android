@@ -563,30 +563,50 @@ class MainActivity : Activity() {
             else -> "SETUP\nChoose a stable stance and prepare the joints involved.\n\nEXECUTION\n1. Move through a comfortable range.\n2. Keep trunk braced and joints aligned.\n3. Return slowly and repeat.\n\nCUES\nUse smooth reps; avoid momentum."
         }
         val fullText = instructions + "\n\nBREATHING\nExhale through the effort; inhale on the controlled return. Keep breathing during holds.\n\nCOMMON MISTAKES\nRushing, losing alignment, using momentum, or continuing after technique breaks.\n\nSAFETY\nUse stable equipment and a pain-free range. Stop for sharp pain, dizziness or unusual joint pain.\n\nTARGET\n" + ex.target + "   |   REST   " + (if (ex.restSeconds > 0) ex.restSeconds.toString() + " sec" else "No timer")
-        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 8, 16, 8) }
-        val gif = WebView(this).apply {
+        val dialogHeightDp = (resources.displayMetrics.heightPixels / resources.displayMetrics.density * 0.82f).toInt()
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(12, 8, 12, 8)
+            layoutParams = ViewGroup.LayoutParams(-1, dialogHeightDp)
+        }
+        val slug = when {
+            ex.name.contains("front lever", true) -> "front-lever"
+            ex.name.contains("shuttle", true) -> "shuttle"
+            else -> ex.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
+        }
+        val demoHtml = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head><body style='margin:0;width:100%;height:100%;background:#121318;display:flex;align-items:center;justify-content:center;overflow:hidden'><img src='demos/" + slug + ".svg' style='width:100%;height:100%;object-fit:contain;display:block'></body></html>"
+        val demoView = WebView(this).apply {
             setBackgroundColor(Color.rgb(18, 19, 24))
             settings.javaScriptEnabled = false
             settings.allowFileAccess = true
-            layoutParams = LinearLayout.LayoutParams(-1, 190)
-            val slug = when {
-                ex.name.contains("front lever", true) -> "front-lever"
-                ex.name.contains("shuttle", true) -> "shuttle"
-                else -> ex.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
-            }
-            val demoHtml = "<html><body style='margin:0;background:#121318;color:#d6a0aa;font:14px sans-serif;text-align:center'><img src='demos/" + slug + ".svg' style='max-width:100%;max-height:185px'><div style='padding:6px'>OFFLINE EXERCISE DEMO</div></body></html>"
+            isVerticalScrollBarEnabled = false
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = android.view.View.OVER_SCROLL_NEVER
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1.45f)
             loadDataWithBaseURL("file:///android_asset/", demoHtml, "text/html", "UTF-8", null)
         }
-        panel.addView(gif)
-        panel.addView(TextView(this).apply {
-            text = fullText
-            setTextColor(Color.rgb(225, 227, 234))
-            textSize = 14f
-            setPadding(2, 14, 2, 8)
-        })
-        AlertDialog.Builder(this).setTitle(ex.name.uppercase(Locale.getDefault()))
-            .setView(ScrollView(this).apply { addView(panel) })
-            .setPositiveButton("CLOSE", null).show()
+        panel.addView(demoView)
+        val textScroll = ScrollView(this).apply {
+            isFillViewport = true
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            addView(TextView(this@MainActivity).apply {
+                text = fullText
+                setTextColor(Color.rgb(225, 227, 234))
+                textSize = 14f
+                setPadding(4, 14, 4, 12)
+            })
+        }
+        panel.addView(textScroll)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(ex.name.uppercase(Locale.getDefault()))
+            .setView(panel)
+            .setPositiveButton("CLOSE", null)
+            .create()
+        dialog.show()
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.94f).toInt(),
+            (resources.displayMetrics.heightPixels * 0.84f).toInt()
+        )
     }
 
     private fun exerciseCard(ex: Exercise, day: Int) {
