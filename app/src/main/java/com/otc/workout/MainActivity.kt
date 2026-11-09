@@ -253,7 +253,6 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         selectedDay = prefs.getInt("next_day", 1)
         currentLevel = prefs.getInt("current_level", 2).coerceIn(2, 6)
-        if (!prefs.getBoolean("level_2_unlocked", false)) prefs.edit().putBoolean("level_2_unlocked", true).apply()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.rgb(12, 13, 17))
@@ -510,16 +509,6 @@ class MainActivity : Activity() {
             text = "STREAK  ·  ${prefs.getInt("streak", 0)} days       NEXT  ·  Day $selectedDay"
             setTextColor(Color.WHITE); textSize = 13f; setPadding(0, 14, 0, 2)
         })
-        heading("CHOOSE YOUR LEVEL")
-        for (level in 2..6) {
-            if (prefs.getBoolean("level_${level}_unlocked", level == 2)) {
-                actionButton(if (level == currentLevel) "LEVEL $level · ACTIVE" else "OPEN LEVEL $level") {
-                    currentLevel = level
-                    prefs.edit().putInt("current_level", level).apply()
-                    showHome()
-                }
-            }
-        }
         heading("YOUR WEEK")
         for (day in 1..7) {
             val label = when (day) {
@@ -827,10 +816,11 @@ class MainActivity : Activity() {
                 if (level < 6) {
                     val nextLevel = level + 1
                     prefs.edit()
+                        .putInt("current_level", nextLevel)
                         .putBoolean("level_${level}_passed", true)
-                        .putBoolean("level_${nextLevel}_unlocked", true)
                         .apply()
-                    Toast.makeText(this, "Level $level passed! Level $nextLevel unlocked. Choose it from Home when you're ready.", Toast.LENGTH_LONG).show()
+                    currentLevel = nextLevel
+                    Toast.makeText(this, "Level $level passed! Level $nextLevel unlocked.", Toast.LENGTH_LONG).show()
                     showHome()
                 } else {
                     prefs.edit().putBoolean("level_6_mastery_passed", true).apply()
