@@ -1,0 +1,5 @@
+OTC 3D exercise demos
+Human figure: MakeHuman / MPFB2, generated under CC0 1.0.
+Motion clips: Mesh2Motion / Quaternius, CC0 1.0 where applicable.
+Rendering pipeline: OpenGym3D, MIT license.
+The videos are rendered locally by GitHub Actions and bundled for offline playback.
