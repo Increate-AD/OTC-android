@@ -261,8 +261,10 @@ class MainActivity : Activity() {
             setPadding(10, 4, 10, 4)
         }
         c.addView(input)
+        val legacyPrefix = if (day == 3 || day == 6 || day == 7) "recovery_$day" else "day_$day"
+        val legacyCount = prefs.getInt("${legacyPrefix}_${ex.name}_sets", 0)
         val logged = TextView(this).apply {
-            text = "Sets logged: ${loadRecords().count { it.day == day && it.exercise == ex.name }}"
+            text = "Sets logged: ${legacyCount + loadRecords().count { it.day == day && it.exercise == ex.name }}"
             setTextColor(Color.rgb(210, 210, 220))
         }
         c.addView(logged)
@@ -275,7 +277,7 @@ class MainActivity : Activity() {
                     Toast.makeText(this@MainActivity, "Enter what you actually completed.", Toast.LENGTH_SHORT).show()
                 } else {
                     val count = addRecord(day, ex.name, value)
-                    logged.text = "Sets logged: $count · Last: $value"
+                    logged.text = "Sets logged: ${legacyCount + count} · Last: $value"
                     input.text.clear()
                     if (ex.restSeconds > 0) startRest(ex.restSeconds)
                 }
