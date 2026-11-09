@@ -18,6 +18,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.text.InputType
 import org.json.JSONArray
 import org.json.JSONObject
@@ -119,6 +121,106 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (currentScreen != "home") showHome() else super.onBackPressed()
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode != RESULT_OK || data?.data == null) return
+        val uri = data.data!!
+        try {
+            when (requestCode) {
+                4101 -> exportBackup(uri)
+                4102 -> importBackup(uri)
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Backup operation failed: ${e.message ?: "unknown error"}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun startBackupExport() {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+            putExtra(Intent.EXTRA_TITLE, "OTC_backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())}.json")
+        }
+        startActivityForResult(intent, 4101)
+    }
+
+    private fun exportBackup(uri: Uri) {
+        val root = JSONObject()
+        root.put("format", "otc-backup-v1")
+        root.put("createdAt", System.currentTimeMillis())
+        val saved = JSONObject()
+        prefs.all.forEach { (key, value) ->
+            val entry = JSONObject()
+            when (value) {
+                is String -> { entry.put("type", "string"); entry.put("value", value) }
+                is Int -> { entry.put("type", "int"); entry.put("value", value) }
+                is Long -> { entry.put("type", "long"); entry.put("value", value) }
+                is Float -> { entry.put("type", "float"); entry.put("value", value.toDouble()) }
+                is Boolean -> { entry.put("type", "boolean"); entry.put("value", value) }
+                is Set<*> -> {
+                    entry.put("type", "string_set")
+                    val values = JSONArray()
+                    value.filterIsInstance<String>().forEach { values.put(it) }
+                    entry.put("value", values)
+                }
+            }
+            saved.put(key, entry)
+        }
+        root.put("preferences", saved)
+        contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(root.toString(2)) }
+            ?: throw IllegalStateException("Could not open the selected file.")
+        Toast.makeText(this, "Backup exported successfully.", Toast.LENGTH_LONG).show()
+    }
+
+    private fun startBackupImport() {
+        AlertDialog.Builder(this)
+            .setTitle("Restore OTC backup?")
+            .setMessage("Restoring replaces the app's current saved data with the backup. Export a backup of your current data first if you want to keep it.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Choose backup") { _, _ ->
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "application/json"
+                }
+                startActivityForResult(intent, 4102)
+            }.show()
+    }
+
+    private fun importBackup(uri: Uri) {
+        val raw = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+            ?: throw IllegalStateException("Could not read the selected file.")
+        val root = JSONObject(raw)
+        require(root.optString("format") == "otc-backup-v1") { "This is not a valid OTC backup." }
+        val saved = root.optJSONObject("preferences")
+            ?: throw IllegalArgumentException("Backup data is missing.")
+        val editor = prefs.edit().clear()
+        val keys = saved.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val entry = saved.optJSONObject(key) ?: continue
+            val value = entry.opt("value")
+            when (entry.optString("type")) {
+                "string" -> editor.putString(key, value as? String ?: "")
+                "int" -> editor.putInt(key, (value as? Number)?.toInt() ?: 0)
+                "long" -> editor.putLong(key, (value as? Number)?.toLong() ?: 0L)
+                "float" -> editor.putFloat(key, (value as? Number)?.toFloat() ?: 0f)
+                "boolean" -> editor.putBoolean(key, value as? Boolean ?: false)
+                "string_set" -> {
+                    val set = mutableSetOf<String>()
+                    (value as? JSONArray)?.let { array ->
+                        for (i in 0 until array.length()) set.add(array.optString(i))
+                    }
+                    editor.putStringSet(key, set)
+                }
+            }
+        }
+        editor.commit()
+        selectedDay = prefs.getInt("next_day", 1).coerceIn(1, 7)
+        showHome()
+        Toast.makeText(this, "Backup restored successfully.", Toast.LENGTH_LONG).show()
     }
 
     private fun weightParams() = LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(2, 4, 2, 4) }
@@ -424,6 +526,10 @@ class MainActivity : Activity() {
         heading("TRAINING HISTORY")
         body("Completed workouts: ${prefs.getInt("workouts_done", 0)}")
         body("Streak: ${prefs.getInt("streak", 0)} days")
+        heading("BACKUP & RESTORE")
+        body("Save your workout history and app progress to a JSON backup file.", 13f)
+        actionButton("EXPORT BACKUP") { startBackupExport() }
+        actionButton("IMPORT BACKUP") { startBackupImport() }
         heading("ALL SET RECORDS")
         val records = loadRecords().sortedByDescending { it.timestamp }
         if (records.isEmpty()) {
